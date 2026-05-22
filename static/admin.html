@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AppleShopTW — 管理後台</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:       #07070f;
+    --bg2:      #0d0d1f;
+    --bg3:      #12122a;
+    --glass:    rgba(255,255,255,0.04);
+    --glass-hi: rgba(255,255,255,0.08);
+    --border:   rgba(255,255,255,0.08);
+    --text:     #e8eaf6;
+    --text2:    #8890aa;
+    --accent:   #3d9bff;
+    --accent2:  #7b61ff;
+    --cyan:     #00d4ff;
+    --green:    #00e5a0;
+    --red:      #ff5a6e;
+    --orange:   #ff9f40;
+    --radius:   14px;
+  }
+  html, body { height: 100%; font-family: -apple-system, "SF Pro Display", sans-serif; }
+  body {
+    background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(61,155,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61,155,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px; pointer-events: none;
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 10% 15%, rgba(255,90,110,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 50% at 90% 80%, rgba(123,97,255,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── Login overlay ── */
+  #loginOverlay {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(7,7,15,0.97); backdrop-filter: blur(20px);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .login-box {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px; width: 360px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    position: relative; overflow: hidden;
+  }
+  .login-box::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--red), var(--accent), var(--cyan));
+  }
+  .login-icon { font-size: 36px; margin-bottom: 16px; text-align: center; }
+  .login-title { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+  .login-sub { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 28px; }
+  .login-label { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; letter-spacing: .5px; }
+  .login-input {
+    width: 100%; background: var(--glass); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; color: var(--text);
+    font-size: 14px; outline: none; transition: border-color .2s;
+    margin-bottom: 20px;
+  }
+  .login-input:focus { border-color: var(--accent); }
+  .login-btn {
+    width: 100%; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; padding: 13px;
+    color: #fff; font-size: 15px; font-weight: 700; cursor: pointer;
+    transition: opacity .2s; letter-spacing: .3px;
+  }
+  .login-btn:hover { opacity: .9; }
+  .login-err { color: var(--red); font-size: 13px; text-align: center; margin-top: 12px; min-height: 20px; }
+
+  /* ── Header ── */
+  header {
+    position: relative; z-index: 10;
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 28px; height: 64px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(7,7,15,0.85); backdrop-filter: blur(20px);
+    flex-shrink: 0;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--red), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; box-shadow: 0 0 16px rgba(255,90,110,0.4);
+  }
+  .logo-text { font-size: 16px; font-weight: 700; }
+  .logo-badge {
+    background: rgba(255,90,110,0.15); border: 1px solid rgba(255,90,110,0.3);
+    color: var(--red); font-size: 11px; font-weight: 700;
+    border-radius: 6px; padding: 2px 8px; letter-spacing: .5px;
+  }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .logout-btn {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 10px; padding: 7px 14px;
+    color: var(--text2); font-size: 13px; cursor: pointer; transition: all .2s;
+  }
+  .logout-btn:hover { border-color: var(--red); color: var(--red); }
+  .go-front {
+    background: rgba(61,155,255,0.1); border: 1px solid rgba(61,155,255,0.2);
+    border-radius: 10px; padding: 7px 14px;
+    color: var(--accent); font-size: 13px; cursor: pointer;
+    text-decoration: none; transition: all .2s;
+  }
+  .go-front:hover { background: rgba(61,155,255,0.2); }
+
+  /* ── Layout ── */
+  .main { display: flex; flex: 1; overflow: hidden; position: relative; z-index: 1; }
+  .sidebar {
+    width: 220px; flex-shrink: 0;
+    background: rgba(13,13,31,0.7); border-right: 1px solid var(--border);
+    backdrop-filter: blur(20px); padding: 20px 12px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px; border-radius: 10px; cursor: pointer;
+    font-size: 14px; color: var(--text2); transition: all .15s; margin-bottom: 2px;
+  }
+  .nav-item:hover { background: var(--glass-hi); color: var(--text); }
+  .nav-item.active {
+    background: linear-gradient(135deg, rgba(255,90,110,0.12), rgba(61,155,255,0.08));
+    color: var(--text); border: 1px solid rgba(255,90,110,0.2);
+  }
+  .nav-sep { height: 1px; background: var(--border); margin: 12px 4px; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px; }
+
+  /* ── Panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .page-title {
+    font-size: 24px; font-weight: 800; margin-bottom: 6px; letter-spacing: -0.5px;
+  }
+  .page-sub { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
+
+  /* ── Stats row ── */
+  .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 28px; }
+  .stat-card {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: rgba(61,155,255,0.3); }
+  .stat-icon { font-size: 24px; margin-bottom: 10px; }
+  .stat-val { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
+  .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* ── Upload Zone ── */
+  .upload-zone {
+    border: 2px dashed var(--border); border-radius: var(--radius);
+    padding: 48px; text-align: center; transition: all .2s;
+    cursor: pointer; background: var(--glass);
+    margin-bottom: 20px;
+  }
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent); background: rgba(61,155,255,0.05);
+  }
+  .upload-zone .zone-icon { font-size: 48px; margin-bottom: 14px; }
+  .upload-zone h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .upload-zone p { font-size: 13px; color: var(--text2); }
+  .upload-zone input { display: none; }
+
+  .upload-options {
+    display: flex; gap: 12px; align-items: center; margin-bottom: 20px; flex-wrap: wrap;
+  }
+  .select-cat {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 14px;
+    color: var(--text); font-size: 14px; outline: none; transition: border-color .2s;
+    cursor: pointer;
+  }
+  .select-cat:focus { border-color: var(--accent); }
+  .new-cat-input {
+    flex: 1; background: var(--glass); border: 1px solid var(--border);
+    border-radius: 10px; padding: 9px 14px;
+    color: var(--text); font-size: 14px; outline: none; transition: border-color .2s;
+  }
+  .new-cat-input:focus { border-color: var(--accent); }
+  .new-cat-input::placeholder { color: var(--text2); }
+  .btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 10px; padding: 9px 20px;
+    color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .2s;
+  }
+  .btn:hover { opacity: .9; }
+  .btn-danger {
+    background: linear-gradient(135deg, var(--red), #c0392b);
+  }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* ── Queue / progress ── */
+  .upload-queue { display: grid; gap: 10px; }
+  .queue-item {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .queue-icon { font-size: 20px; flex-shrink: 0; }
+  .queue-info { flex: 1; }
+  .queue-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .queue-meta { font-size: 11px; color: var(--text2); }
+  .queue-status {
+    font-size: 11px; font-weight: 700; border-radius: 6px;
+    padding: 3px 10px; white-space: nowrap;
+  }
+  .st-waiting  { background: rgba(136,144,170,0.12); color: var(--text2); border: 1px solid var(--border); }
+  .st-uploading{ background: rgba(61,155,255,0.12);  color: var(--accent); border: 1px solid rgba(61,155,255,0.3); }
+  .st-done     { background: rgba(0,229,160,0.12);   color: var(--green);  border: 1px solid rgba(0,229,160,0.3); }
+  .st-error    { background: rgba(255,90,110,0.12);  color: var(--red);    border: 1px solid rgba(255,90,110,0.3); }
+  .progress-bar { height: 3px; border-radius: 3px; background: var(--border); margin-top: 6px; overflow: hidden; }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    transition: width .3s; width: 0%;
+  }
+
+  /* ── Table ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th {
+    text-align: left; padding: 10px 14px;
+    color: var(--text2); font-size: 11px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .data-table tr:hover td { background: var(--glass); }
+  .cat-pill {
+    background: rgba(61,155,255,0.1); border: 1px solid rgba(61,155,255,0.2);
+    color: var(--accent); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 600;
+  }
+  .del-btn {
+    background: none; border: 1px solid rgba(255,90,110,0.3); border-radius: 6px;
+    padding: 4px 10px; color: var(--red); font-size: 12px; cursor: pointer; transition: all .2s;
+  }
+  .del-btn:hover { background: rgba(255,90,110,0.1); }
+
+  /* ── Empty ── */
+  .empty { text-align: center; padding: 48px; color: var(--text2); }
+  .empty .emoji { font-size: 40px; margin-bottom: 12px; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 28px; right: 28px; z-index: 999;
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 12px; padding: 13px 20px;
+    font-size: 13px; color: var(--text);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+    transform: translateY(80px); opacity: 0; transition: all .3s; pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN OVERLAY ── -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-icon">🔐</div>
+    <div class="login-title">管理員登入</div>
+    <div class="login-sub">此頁面僅限授權管理員使用</div>
+    <div class="login-label">管理員密碼</div>
+    <input class="login-input" type="password" id="pwInput" placeholder="請輸入密碼"
+           onkeydown="if(event.key==='Enter') doLogin()"/>
+    <button class="login-btn" onclick="doLogin()">🔓 登入管理後台</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚙️</div>
+    <div class="logo-text">AppleShop<span style="color:var(--accent)">TW</span> <span style="font-weight:400;color:var(--text2);font-size:14px">管理後台</span></div>
+    <span class="logo-badge">ADMIN</span>
+  </div>
+  <div class="header-right">
+    <a class="go-front" href="/" target="_blank">🌐 前往客戶端</a>
+    <button class="logout-btn" onclick="doLogout()">🚪 登出</button>
+  </div>
+</header>
+
+<!-- ── MAIN ── -->
+<div class="main">
+  <aside class="sidebar">
+    <div class="nav-item active" onclick="showPanel('upload', this)">📤 <span>上傳文件</span></div>
+    <div class="nav-item" onclick="showPanel('manage', this)">📚 <span>文件管理</span></div>
+    <div class="nav-item" onclick="showPanel('stats', this)">📊 <span>資料庫狀態</span></div>
+    <div class="nav-sep"></div>
+    <div class="nav-item" onclick="window.open('/', '_blank')">🌐 <span>客戶端預覽</span></div>
+  </aside>
+
+  <div class="content">
+
+    <!-- ═══ 上傳文件 ═══ -->
+    <div class="panel active" id="panel-upload">
+      <div class="page-title">📤 上傳文件</div>
+      <div class="page-sub">選擇分類後拖曳或選取 PDF，系統將自動解析並匯入知識庫</div>
+
+      <div class="upload-options">
+        <select class="select-cat" id="catSelect">
+          <option value="">-- 選擇現有分類 --</option>
+        </select>
+        <input class="new-cat-input" id="newCatInput" placeholder="或輸入新分類名稱（例：Safari）"/>
+        <button class="btn" onclick="startUpload()">📤 開始上傳</button>
+      </div>
+
+      <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+        <input type="file" id="fileInput" accept=".pdf" multiple onchange="prepareFiles(this.files)"/>
+        <div class="zone-icon">📄</div>
+        <h3>拖曳 PDF 到這裡，或點擊選取</h3>
+        <p>支援多檔同時上傳 · 每份最大 100 MB · 僅限 PDF</p>
+      </div>
+
+      <div class="upload-queue" id="uploadQueue"></div>
+    </div>
+
+    <!-- ═══ 文件管理 ═══ -->
+    <div class="panel" id="panel-manage">
+      <div class="page-title">📚 文件管理</div>
+      <div class="page-sub">瀏覽、篩選、刪除已匯入的文件</div>
+
+      <div style="display:flex;gap:10px;margin-bottom:20px;">
+        <select class="select-cat" id="filterCat" onchange="loadDocuments()">
+          <option value="">全部分類</option>
+        </select>
+        <input class="new-cat-input" id="filterSearch" placeholder="搜尋檔案名稱..."
+               oninput="filterTable()" style="max-width:280px"/>
+      </div>
+
+      <div style="background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+        <table class="data-table" id="docTable">
+          <thead>
+            <tr>
+              <th>檔案名稱</th>
+              <th>分類</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="docBody">
+            <tr><td colspan="3"><div class="empty"><div class="emoji">📭</div><p>載入中...</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ 資料庫狀態 ═══ -->
+    <div class="panel" id="panel-stats">
+      <div class="page-title">📊 資料庫狀態</div>
+      <div class="page-sub">知識庫目前的索引狀況</div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-icon">📄</div>
+          <div class="stat-val" id="statDocs">-</div>
+          <div class="stat-label">已匯入文件數</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📂</div>
+          <div class="stat-val" id="statCats">-</div>
+          <div class="stat-label">分類數量</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🧩</div>
+          <div class="stat-val" id="statChunks">-</div>
+          <div class="stat-label">向量段落數</div>
+        </div>
+      </div>
+
+      <div style="background:var(--glass);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:16px;">各分類文件數</div>
+        <div id="catBreakdown">載入中...</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Auth ──────────────────────────────────────────────────────────────
+const ADMIN_KEY = 'kb_admin_token';
+
+function doLogin() {
+  const pw = document.getElementById('pwInput').value.trim();
+  if (!pw) return;
+  // 密碼送到後端驗證
+  fetch('/api/admin/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: pw }),
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (d.token) {
+      sessionStorage.setItem(ADMIN_KEY, d.token);
+      document.getElementById('loginOverlay').style.display = 'none';
+      init();
+    } else {
+      document.getElementById('loginErr').textContent = '❌ ' + (d.detail || '密碼錯誤');
+    }
+  })
+  .catch(() => {
+    document.getElementById('loginErr').textContent = '⚠️ 無法連線，請確認伺服器已啟動';
+  });
+}
+
+function doLogout() {
+  sessionStorage.removeItem(ADMIN_KEY);
+  location.reload();
+}
+
+function authHeader() {
+  return { 'X-Admin-Token': sessionStorage.getItem(ADMIN_KEY) || '' };
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Check if already logged in
+  const token = sessionStorage.getItem(ADMIN_KEY);
+  if (token) {
+    fetch('/api/admin/verify', { headers: authHeader() })
+      .then(r => {
+        if (r.ok) {
+          document.getElementById('loginOverlay').style.display = 'none';
+          init();
+        }
+      })
+      .catch(() => {});
+  }
+  // Enter key for login
+  document.getElementById('pwInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+
+  // Drag & drop
+  const zone = document.getElementById('dropZone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    prepareFiles(e.dataTransfer.files);
+  });
+});
+
+function init() {
+  loadCategories();
+  loadStats();
+}
+
+// ── Panel nav ─────────────────────────────────────────────────────────
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+  if (name === 'manage') loadDocuments();
+  if (name === 'stats')  loadStats();
+}
+
+// ── Categories ────────────────────────────────────────────────────────
+let allCategories = [];
+
+async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    const { categories } = await res.json();
+    allCategories = categories;
+
+    ['catSelect','filterCat'].forEach(id => {
+      const sel = document.getElementById(id);
+      const firstOpt = sel.options[0];
+      sel.innerHTML = '';
+      sel.appendChild(firstOpt);
+      categories.forEach(c => {
+        const o = new Option(c, c);
+        sel.appendChild(o);
+      });
+    });
+  } catch(e) {}
+}
+
+// ── Upload ────────────────────────────────────────────────────────────
+let pendingFiles = [];
+
+function prepareFiles(files) {
+  pendingFiles = Array.from(files);
+  const queue = document.getElementById('uploadQueue');
+  queue.innerHTML = '';
+  pendingFiles.forEach((f, i) => {
+    const el = document.createElement('div');
+    el.className = 'queue-item'; el.id = `qi-${i}`;
+    el.innerHTML = `
+      <span class="queue-icon">📄</span>
+      <div class="queue-info">
+        <div class="queue-name">${f.name}</div>
+        <div class="queue-meta">${(f.size/1024/1024).toFixed(2)} MB</div>
+        <div class="progress-bar"><div class="progress-fill" id="pf-${i}"></div></div>
+      </div>
+      <span class="queue-status st-waiting" id="qs-${i}">等待上傳</span>
+    `;
+    queue.appendChild(el);
+  });
+}
+
+function getTargetCategory() {
+  const newCat = document.getElementById('newCatInput').value.trim();
+  const selCat = document.getElementById('catSelect').value;
+  return newCat || selCat || '其他';
+}
+
+async function startUpload() {
+  if (!pendingFiles.length) { showToast('⚠️ 請先選取 PDF 檔案'); return; }
+  const cat = getTargetCategory();
+
+  for (let i = 0; i < pendingFiles.length; i++) {
+    setQueueStatus(i, 'uploading', '上傳中...');
+    animateProgress(i);
+    const fd = new FormData();
+    fd.append('file', pendingFiles[i]);
+    fd.append('category', cat);
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST', body: fd,
+        headers: authHeader(),
+      });
+      if (res.ok) {
+        setQueueStatus(i, 'done', '✅ 完成');
+        document.getElementById(`pf-${i}`).style.width = '100%';
+      } else {
+        const err = await res.json();
+        setQueueStatus(i, 'error', '❌ ' + (err.detail || '失敗'));
+      }
+    } catch(e) {
+      setQueueStatus(i, 'error', '❌ 連線失敗');
+    }
+  }
+  pendingFiles = [];
+  showToast('上傳完成，正在背景匯入...');
+  setTimeout(() => { loadCategories(); loadStats(); }, 4000);
+}
+
+function setQueueStatus(i, type, text) {
+  const el = document.getElementById(`qs-${i}`);
+  if (!el) return;
+  el.className = `queue-status st-${type}`;
+  el.textContent = text;
+}
+
+function animateProgress(i) {
+  let w = 0;
+  const bar = document.getElementById(`pf-${i}`);
+  if (!bar) return;
+  const iv = setInterval(() => {
+    w = Math.min(w + Math.random() * 15, 90);
+    bar.style.width = w + '%';
+    if (w >= 90) clearInterval(iv);
+  }, 300);
+}
+
+// ── Document management ───────────────────────────────────────────────
+let allDocs = [];
+
+async function loadDocuments() {
+  const cat = document.getElementById('filterCat').value;
+  const url = cat ? `/api/articles?category=${encodeURIComponent(cat)}` : '/api/articles';
+  const res = await fetch(url);
+  const { articles } = await res.json();
+  allDocs = articles;
+  renderTable(articles);
+}
+
+function filterTable() {
+  const q = document.getElementById('filterSearch').value.toLowerCase();
+  renderTable(allDocs.filter(a => a.filename.toLowerCase().includes(q)));
+}
+
+function renderTable(docs) {
+  const body = document.getElementById('docBody');
+  if (!docs.length) {
+    body.innerHTML = '<tr><td colspan="3"><div class="empty"><div class="emoji">📭</div><p>尚無文件</p></div></td></tr>';
+    return;
+  }
+  body.innerHTML = docs.map((d, i) => `
+    <tr>
+      <td style="font-weight:500">${d.filename}</td>
+      <td><span class="cat-pill">${d.category}</span></td>
+      <td>
+        <button class="del-btn" onclick="deleteDoc('${d.filename}', '${d.category}')">🗑 刪除</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function deleteDoc(filename, category) {
+  if (!confirm(`確定要刪除「${filename}」嗎？\n此操作會從知識庫移除相關索引。`)) return;
+  try {
+    const res = await fetch('/api/admin/delete', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', ...authHeader() },
+      body: JSON.stringify({ filename, category }),
+    });
+    if (res.ok) {
+      showToast(`✅ 已刪除 ${filename}`);
+      loadDocuments();
+      loadStats();
+    } else {
+      showToast('❌ 刪除失敗');
+    }
+  } catch(e) {
+    showToast('❌ 連線錯誤');
+  }
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const [catRes, artRes, chunkRes] = await Promise.all([
+      fetch('/api/categories'),
+      fetch('/api/articles'),
+      fetch('/api/admin/stats', { headers: authHeader() }),
+    ]);
+    const { categories } = await catRes.json();
+    const { articles }   = await artRes.json();
+    const stats          = chunkRes.ok ? await chunkRes.json() : {};
+
+    document.getElementById('statDocs').textContent   = articles.length;
+    document.getElementById('statCats').textContent   = categories.length;
+    document.getElementById('statChunks').textContent = stats.total_chunks ?? '—';
+
+    // Per-cat count
+    const counts = {};
+    articles.forEach(a => { counts[a.category] = (counts[a.category]||0)+1; });
+    const bd = document.getElementById('catBreakdown');
+    bd.innerHTML = categories.map(c => `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="width:120px;font-size:13px;color:var(--text2)">${c}</span>
+        <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${Math.min((counts[c]||0)/articles.length*100,100)}%;
+               background:linear-gradient(90deg,var(--accent),var(--cyan));border-radius:4px"></div>
+        </div>
+        <span style="font-size:13px;font-weight:700;width:30px;text-align:right">${counts[c]||0}</span>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

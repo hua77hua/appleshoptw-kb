@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AppleShopTW — 知識庫</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #07070f;
+    --bg2:       #0d0d1f;
+    --bg3:       #12122a;
+    --glass:     rgba(255,255,255,0.04);
+    --glass-hi:  rgba(255,255,255,0.08);
+    --border:    rgba(255,255,255,0.08);
+    --border-hi: rgba(100,180,255,0.3);
+    --text:      #e8eaf6;
+    --text2:     #8890aa;
+    --accent:    #3d9bff;
+    --accent2:   #7b61ff;
+    --cyan:      #00d4ff;
+    --green:     #00e5a0;
+    --orange:    #ff9f40;
+    --glow:      0 0 30px rgba(61,155,255,0.2);
+    --radius:    14px;
+    --sidebar-w: 250px;
+  }
+
+  html, body { height: 100%; font-family: -apple-system, "SF Pro Display", sans-serif; }
+  body {
+    background: var(--bg); color: var(--text);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(61,155,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(61,155,255,0.04) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 15% 20%, rgba(61,155,255,0.10) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 85% 70%, rgba(123,97,255,0.08) 0%, transparent 70%);
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative; z-index: 10; flex-shrink: 0;
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 28px; height: 64px;
+    background: rgba(7,7,15,0.85); backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; box-shadow: 0 0 16px rgba(61,155,255,0.45);
+  }
+  .logo-text { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .logo-text span { color: var(--accent); }
+
+  .search-bar {
+    flex: 1; max-width: 600px; margin: 0 auto;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--glass-hi); border: 1px solid var(--border);
+    border-radius: 12px; padding: 0 16px; height: 42px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .search-bar:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(61,155,255,0.12), var(--glow);
+  }
+  .search-bar svg { flex-shrink: 0; opacity: .4; }
+  .search-bar input {
+    flex: 1; background: none; border: none; outline: none;
+    color: var(--text); font-size: 14px;
+  }
+  .search-bar input::placeholder { color: var(--text2); }
+  .search-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none; border-radius: 8px; padding: 7px 18px;
+    color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: opacity .15s, transform .1s;
+  }
+  .search-btn:hover  { opacity: .9; }
+  .search-btn:active { transform: scale(.97); }
+
+  .admin-link {
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    background: var(--glass); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    text-decoration: none; font-size: 16px; transition: all .15s;
+  }
+  .admin-link:hover { border-color: var(--border-hi); background: var(--glass-hi); }
+
+  /* ── Layout ── */
+  .main { display: flex; flex: 1; overflow: hidden; position: relative; z-index: 1; }
+
+  /* ── Sidebar ── */
+  aside {
+    width: var(--sidebar-w); flex-shrink: 0;
+    background: rgba(13,13,31,0.75); border-right: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    display: flex; flex-direction: column; overflow: hidden; padding: 16px 10px;
+  }
+  .sidebar-label {
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    letter-spacing: .7px; text-transform: uppercase;
+    padding: 0 8px; margin-bottom: 10px;
+  }
+  .cat-scroll { flex: 1; overflow-y: auto; }
+  .cat-scroll::-webkit-scrollbar { width: 4px; }
+  .cat-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .cat-btn {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%; padding: 9px 10px; border-radius: 10px; border: none;
+    background: none; cursor: pointer; font-size: 13.5px; color: var(--text2);
+    transition: all .15s; text-align: left; margin-bottom: 2px;
+  }
+  .cat-btn:hover { background: var(--glass-hi); color: var(--text); }
+  .cat-btn.active {
+    background: linear-gradient(135deg, rgba(61,155,255,0.14), rgba(123,97,255,0.08));
+    color: var(--accent); font-weight: 600;
+    border: 1px solid rgba(61,155,255,0.18);
+  }
+  .cat-btn.active::before {
+    content: ''; position: absolute; left: 10px;
+    width: 3px; height: 20px; border-radius: 3px;
+    background: linear-gradient(var(--accent), var(--accent2));
+    margin-top: -10px;
+  }
+  .cat-btn { position: relative; }
+  .cat-icon { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+  .cat-badge {
+    margin-left: auto; font-size: 11px; font-weight: 600;
+    background: var(--glass); color: var(--text2);
+    border-radius: 10px; padding: 1px 7px;
+  }
+  .cat-btn.active .cat-badge {
+    background: rgba(61,155,255,0.12); color: var(--accent);
+  }
+
+  /* ── Content ── */
+  .content { flex: 1; overflow-y: auto; }
+  .content::-webkit-scrollbar { width: 5px; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* ── Hero ── */
+  .hero { text-align: center; padding: 60px 28px 40px; max-width: 700px; margin: 0 auto; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(61,155,255,0.08); border: 1px solid rgba(61,155,255,0.22);
+    border-radius: 20px; padding: 5px 14px; margin-bottom: 22px;
+    font-size: 12px; font-weight: 600; color: var(--accent); letter-spacing: .4px;
+  }
+  .hero h1 {
+    font-size: 40px; font-weight: 800; letter-spacing: -1px; margin-bottom: 12px;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 65%, var(--cyan) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero p { color: var(--text2); font-size: 15px; margin-bottom: 32px; line-height: 1.65; }
+
+  .quick-grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .q-chip {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 20px; padding: 7px 15px; font-size: 13px;
+    color: var(--text2); cursor: pointer; transition: all .18s;
+  }
+  .q-chip:hover {
+    background: rgba(61,155,255,0.1); border-color: rgba(61,155,255,0.3);
+    color: var(--accent); transform: translateY(-1px);
+  }
+
+  /* ── Results ── */
+  .result-page { padding: 26px 30px; max-width: 880px; }
+  .result-header { margin-bottom: 22px; }
+  .result-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .result-header h2 em { font-style: normal; color: var(--accent); }
+  .result-meta { font-size: 13px; color: var(--text2); }
+
+  /* ── AI Answer ── */
+  .answer-card {
+    background: #ffffff;
+    border: 1px solid rgba(61,155,255,0.25);
+    border-radius: var(--radius); padding: 22px 24px; margin-bottom: 24px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  }
+  .answer-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--cyan));
+  }
+  .answer-card-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .answer-avatar {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .answer-label { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .answer-live {
+    margin-left: auto; display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--cyan); font-weight: 600;
+  }
+  .live-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--cyan);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.25} }
+  .answer-text {
+    font-size: 14px; line-height: 1.85; color: #1a1d23;
+    white-space: pre-wrap; word-break: break-word;
+    max-height: 520px; overflow-y: auto;
+    padding-right: 6px;
+    scrollbar-width: thin; scrollbar-color: #d0d5dd transparent;
+  }
+  .answer-text::-webkit-scrollbar { width: 5px; }
+  .answer-text::-webkit-scrollbar-thumb { background: #d0d5dd; border-radius: 4px; }
+
+  /* ── Sources ── */
+  .sources-label {
+    font-size: 11px; font-weight: 600; color: var(--text2);
+    letter-spacing: .6px; text-transform: uppercase; margin-bottom: 12px;
+  }
+  .sources-grid { display: grid; gap: 12px; }
+
+  .source-card {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    display: flex; gap: 14px; align-items: flex-start;
+    text-decoration: none; color: inherit;
+    cursor: pointer; transition: border-color .18s, background .18s, transform .18s;
+  }
+  .source-card:hover {
+    border-color: var(--border-hi); background: var(--glass-hi);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .source-open {
+    font-size: 18px; flex-shrink: 0; align-self: center;
+    opacity: 0; transition: opacity .18s;
+  }
+  .source-card:hover .source-open { opacity: 1; }
+  .source-card.card-active {
+    border-color: var(--accent);
+    background: rgba(61,155,255,0.08);
+    box-shadow: 0 0 0 1px rgba(61,155,255,0.3);
+  }
+  .source-card.card-active .source-open { opacity: 1; }
+  .source-icon {
+    width: 42px; height: 42px; border-radius: 11px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(61,155,255,0.18), rgba(123,97,255,0.14));
+    border: 1px solid rgba(61,155,255,0.2);
+    display: flex; align-items: center; justify-content: center; font-size: 19px;
+  }
+  .source-body { flex: 1; }
+  .source-name { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .source-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .tag {
+    font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 8px;
+  }
+  .tag-cat  { background: rgba(61,155,255,0.12); color: var(--accent);  border: 1px solid rgba(61,155,255,0.2); }
+  .tag-page { background: var(--glass);           color: var(--text2);  border: 1px solid var(--border); }
+  .tag-hi   { background: rgba(0,229,160,0.10);   color: var(--green);  border: 1px solid rgba(0,229,160,0.25); }
+  .tag-mid  { background: rgba(61,155,255,0.10);  color: var(--accent); border: 1px solid rgba(61,155,255,0.2); }
+  .tag-lo   { background: rgba(255,159,64,0.10);  color: var(--orange); border: 1px solid rgba(255,159,64,0.2); }
+  .source-excerpt {
+    font-size: 13px; line-height: 1.7; color: var(--text2);
+  }
+  .expand-btn { display: none; }
+  .source-arrow { color: var(--text2); font-size: 18px; align-self: center; flex-shrink: 0; }
+
+  /* ── Browse ── */
+  .browse-page { padding: 26px 30px; max-width: 880px; }
+  .browse-header { margin-bottom: 20px; }
+  .browse-header h2 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .browse-header p  { font-size: 13px; color: var(--text2); }
+  .browse-grid { display: grid; gap: 8px; }
+  .browse-card {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 18px;
+    display: flex; align-items: center; gap: 12px;
+    cursor: pointer; transition: all .18s;
+  }
+  .browse-card:hover {
+    border-color: var(--border-hi); background: var(--glass-hi);
+    transform: translateX(3px);
+  }
+  .browse-icon { font-size: 20px; flex-shrink: 0; }
+  .browse-name { font-size: 14px; font-weight: 500; }
+  .browse-cat  { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .browse-arrow { margin-left: auto; color: var(--text2); font-size: 16px; }
+
+  /* ── Loading / Empty ── */
+  .loading-state {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 14px; padding: 60px 20px; color: var(--text2);
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2.5px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--text2); }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .empty-state .emoji { font-size: 44px; margin-bottom: 14px; }
+  .empty-state p { font-size: 14px; }
+
+  mark { background: rgba(61,155,255,0.18); color: var(--accent); border-radius: 3px; padding: 0 2px; }
+
+  /* ── PDF Panel ── */
+  .pdf-panel {
+    width: 0; flex-shrink: 0; overflow: hidden;
+    background: rgba(13,13,31,0.9); border-left: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    display: flex; flex-direction: column;
+    transition: width .3s cubic-bezier(.4,0,.2,1);
+    position: relative; z-index: 5;
+  }
+  .pdf-panel.open { width: 480px; }
+  .pdf-panel-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; height: 52px; flex-shrink: 0;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.03);
+  }
+  .pdf-panel-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+    overflow: hidden;
+  }
+  .pdf-panel-icon { font-size: 16px; flex-shrink: 0; }
+  #pdfPanelName {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: 300px; color: var(--text2);
+  }
+  .pdf-panel-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .pdf-action-btn {
+    background: var(--glass); border: 1px solid var(--border);
+    border-radius: 7px; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text2); font-size: 14px; cursor: pointer;
+    text-decoration: none; transition: all .15s;
+  }
+  .pdf-action-btn:hover { background: var(--glass-hi); color: var(--text); border-color: var(--border-hi); }
+  .pdf-panel-body { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+  .pdf-panel-body iframe {
+    flex: 1; width: 100%; height: 100%; border: none; background: #fff;
+  }
+  .pdf-placeholder {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 12px; color: var(--text2); padding: 40px;
+    text-align: center;
+  }
+  .pdf-placeholder-icon { font-size: 48px; opacity: .5; }
+  .pdf-placeholder p { font-size: 13px; line-height: 1.6; }
+
+  /* 開啟面板時縮小搜尋區 */
+  .pdf-panel.open ~ * .result-page,
+  .result-page { max-width: 100%; }
+
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🍎</div>
+    <div class="logo-text">AppleShop<span>TW</span></div>
+  </div>
+
+  <div class="search-bar">
+    <svg width="15" height="15" viewBox="0 0 20 20" fill="none">
+      <circle cx="8.5" cy="8.5" r="5.75" stroke="#e8eaf6" stroke-width="1.8"/>
+      <path d="M13 13l4 4" stroke="#e8eaf6" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <input type="text" id="searchInput" placeholder="請問有什麼需要幫忙的？例如：Safari 書籤設定" autocomplete="off"/>
+    <button class="search-btn" onclick="doSearch()">搜尋</button>
+  </div>
+
+  <a class="admin-link" href="/admin" title="管理後台">⚙️</a>
+</header>
+
+<!-- ── MAIN ── -->
+<div class="main">
+
+  <!-- Sidebar -->
+  <aside>
+    <div class="sidebar-label">文件分類</div>
+    <div class="cat-scroll" id="catList">
+      <button class="cat-btn active" data-cat="all" onclick="selectCat('all',this)">
+        <span class="cat-icon">📋</span>
+        <span>全部文件</span>
+        <span class="cat-badge" id="countAll">—</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Content -->
+  <div class="content" id="mainContent">
+
+    <!-- HERO -->
+    <div id="viewHero">
+      <div class="hero">
+        <div class="hero-badge">✨ AI 智能搜尋 · 語意理解</div>
+        <h1>歡迎來到 AppleShopTW</h1>
+        <p>輸入您的問題，AI 將從 300+ 份教學文件中<br>為您找到最相關的答案</p>
+        <div class="quick-grid" id="quickChips">
+          <div class="q-chip" onclick="quickAsk('如何開始使用？')">🚀 如何開始使用</div>
+          <div class="q-chip" onclick="quickAsk('Safari 書籤設定')">🌐 Safari 書籤</div>
+          <div class="q-chip" onclick="quickAsk('iCloud 如何設定')">☁️ iCloud 設定</div>
+          <div class="q-chip" onclick="quickAsk('Apple ID 登入問題')">🔑 Apple ID</div>
+          <div class="q-chip" onclick="quickAsk('如何更新系統')">🔄 系統更新</div>
+          <div class="q-chip" onclick="quickAsk('Wi-Fi 連線設定')">📶 Wi-Fi 設定</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEARCH RESULTS -->
+    <div id="viewResults" style="display:none" class="result-page">
+      <div class="result-header">
+        <h2 id="resultTitle">搜尋結果</h2>
+        <div class="result-meta" id="resultMeta"></div>
+      </div>
+
+      <!-- AI Answer -->
+      <div class="answer-card" id="answerCard" style="display:none">
+        <div class="answer-card-header">
+          <div class="answer-avatar">🤖</div>
+          <div class="answer-label">AI 助理回覆</div>
+          <div class="answer-live"><div class="live-dot"></div>即時分析</div>
+        </div>
+        <div class="answer-text" id="answerText"></div>
+      </div>
+
+      <div class="sources-label" id="sourcesLabel"></div>
+      <div class="sources-grid" id="sourcesGrid"></div>
+    </div>
+
+    <!-- BROWSE -->
+    <div id="viewBrowse" style="display:none" class="browse-page">
+      <div class="browse-header">
+        <h2 id="browseTitle">文件瀏覽</h2>
+        <p id="browseSubtitle"></p>
+      </div>
+      <div class="browse-grid" id="browseGrid"></div>
+    </div>
+
+  </div>
+
+  <!-- ── PDF Viewer Panel ── -->
+  <div id="pdfPanel" class="pdf-panel">
+    <div class="pdf-panel-header">
+      <div class="pdf-panel-title">
+        <span class="pdf-panel-icon">📄</span>
+        <span id="pdfPanelName">PDF 閱讀器</span>
+      </div>
+      <div class="pdf-panel-actions">
+        <a id="pdfOpenNew" href="#" target="_blank" class="pdf-action-btn" title="在新分頁開啟">⤢</a>
+        <button class="pdf-action-btn" onclick="closePdfPanel()" title="關閉">✕</button>
+      </div>
+    </div>
+    <div class="pdf-panel-body" id="pdfPanelBody">
+      <div class="pdf-placeholder">
+        <div class="pdf-placeholder-icon">📂</div>
+        <p>點擊左側來源文件<br>即可在此閱讀 PDF</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const state = { cat: 'all' };
+const ICONS = {
+  '新手教學':'🚀','Safari':'🌐','iCloud':'☁️','App Store':'🛍️',
+  '系統設定':'⚙️','Wi-Fi':'📶','Apple ID':'🔑','FaceTime':'📹',
+  'Mail':'✉️','Photos':'🖼️','Maps':'🗺️','Siri':'🎙️','其他':'📄',
+};
+const icon = n => ICONS[n] || '📁';
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadSidebar();
+  document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+  });
+});
+
+async function loadSidebar() {
+  try {
+    const [catRes, artRes] = await Promise.all([fetch('/api/categories'), fetch('/api/articles')]);
+    const { categories } = await catRes.json();
+    const { articles }   = await artRes.json();
+    const counts = {};
+    articles.forEach(a => counts[a.category] = (counts[a.category]||0)+1);
+    document.getElementById('countAll').textContent = articles.length;
+    const list = document.getElementById('catList');
+    categories.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'cat-btn'; btn.dataset.cat = c;
+      btn.onclick = () => selectCat(c, btn);
+      btn.innerHTML = `<span class="cat-icon">${icon(c)}</span><span>${c}</span><span class="cat-badge">${counts[c]||0}</span>`;
+      list.appendChild(btn);
+    });
+    if (categories.length >= 2) {
+      const chips = document.getElementById('quickChips');
+      chips.innerHTML = '';
+      [{ q:'如何開始使用？', i:'🚀' }, ...categories.slice(0,5).map(c => ({ q:c, i:icon(c), cat:c }))]
+        .forEach(p => {
+          const d = document.createElement('div');
+          d.className = 'q-chip';
+          d.innerHTML = `${p.i} ${p.q}`;
+          d.onclick = () => p.cat ? selectCat(p.cat, document.querySelector(`[data-cat="${p.cat}"]`)) : quickAsk(p.q);
+          chips.appendChild(d);
+        });
+    }
+  } catch(e) {}
+}
+
+function selectCat(cat, el) {
+  state.cat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('searchInput').value = '';
+  show('viewBrowse');
+  loadBrowse(cat);
+}
+
+async function loadBrowse(cat) {
+  const grid = document.getElementById('browseGrid');
+  grid.innerHTML = '<div class="loading-state"><div class="spinner"></div><div class="loading-text">載入文件...</div></div>';
+  const url = cat === 'all' ? '/api/articles' : `/api/articles?category=${encodeURIComponent(cat)}`;
+  try {
+    const { articles } = await (await fetch(url)).json();
+    document.getElementById('browseTitle').textContent = cat === 'all' ? '📋 全部文件' : `${icon(cat)} ${cat}`;
+    document.getElementById('browseSubtitle').textContent = `共 ${articles.length} 份教學文件`;
+    if (!articles.length) { grid.innerHTML = '<div class="empty-state"><div class="emoji">📭</div><p>此分類尚無文件</p></div>'; return; }
+    grid.innerHTML = '';
+    articles.forEach(a => {
+      const el = document.createElement('div');
+      el.className = 'browse-card';
+      el.onclick = () => quickAsk(a.filename.replace('.pdf',''));
+      el.innerHTML = `
+        <span class="browse-icon">${icon(a.category)}</span>
+        <div><div class="browse-name">${a.filename.replace('.pdf','')}</div><div class="browse-cat">${a.category}</div></div>
+        <span class="browse-arrow">›</span>`;
+      grid.appendChild(el);
+    });
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div><p>載入失敗，請稍後再試</p></div>';
+  }
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  show('viewResults');
+  document.getElementById('resultTitle').innerHTML = `「<em>${q}</em>」的搜尋結果`;
+  document.getElementById('resultMeta').textContent = '';
+  document.getElementById('answerCard').style.display = 'none';
+  document.getElementById('sourcesLabel').textContent = '';
+  const grid = document.getElementById('sourcesGrid');
+  grid.innerHTML = '<div class="loading-state"><div class="spinner"></div><div class="loading-text">AI 正在為您尋找答案...</div></div>';
+  const cat = state.cat === 'all' ? null : state.cat;
+  try {
+    const res  = await fetch('/api/search', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: q, ...(cat ? { category: cat } : {}) }),
+    });
+    const data = await res.json();
+    document.getElementById('resultMeta').textContent = `找到 ${data.results.length} 個相關段落`;
+    if (data.answer || data.results.length) {
+      document.getElementById('answerText').textContent = data.answer || data.results[0].chunk.trim();
+      document.getElementById('answerCard').style.display = '';
+    }
+    if (!data.results.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="emoji">🔍</div><p>找不到相關內容，請嘗試其他關鍵字</p></div>';
+      return;
+    }
+    document.getElementById('sourcesLabel').textContent = '📎 相關文件來源';
+    grid.innerHTML = '';
+    data.results.forEach((r, i) => {
+      const pct    = Math.round(r.score * 100);
+      const sc     = pct >= 80 ? 'tag-hi' : pct >= 60 ? 'tag-mid' : 'tag-lo';
+      const pdfUrl = `/pdfs/${encodeURIComponent(r.category)}/${encodeURIComponent(r.filename)}#page=${r.page}`;
+
+      const card = document.createElement('div');
+      card.className = 'source-card';
+      card.style.cursor = 'pointer';
+      card.onclick = () => openPdfPanel(pdfUrl, r.filename, r.page);
+      card.innerHTML = `
+        <div class="source-icon">${icon(r.category)}</div>
+        <div class="source-body">
+          <div class="source-name">${r.filename.replace('.pdf','')}</div>
+          <div class="source-tags">
+            <span class="tag tag-cat">${r.category}</span>
+            <span class="tag tag-page">第 ${r.page} 頁</span>
+            <span class="tag ${sc}">${pct}% 相符</span>
+          </div>
+          <div class="source-excerpt">${hl(r.chunk, q)}</div>
+        </div>
+        <span class="source-open">📖</span>`;
+      grid.appendChild(card);
+    });
+  } catch(e) {
+    grid.innerHTML = '<div class="empty-state"><div class="emoji">⚠️</div><p>搜尋發生錯誤，請確認服務已啟動</p></div>';
+  }
+}
+
+function quickAsk(q) { document.getElementById('searchInput').value = q; doSearch(); }
+
+function show(id) {
+  ['viewHero','viewResults','viewBrowse'].forEach(v =>
+    document.getElementById(v).style.display = v === id ? '' : 'none');
+}
+
+function toggleEx(id, btn) {
+  const el = document.getElementById(id);
+  el.classList.toggle('expanded');
+  btn.textContent = el.classList.contains('expanded') ? '收合 ▴' : '顯示更多 ▾';
+}
+
+// ── PDF Panel ─────────────────────────────────────────────
+function openPdfPanel(url, filename, page) {
+  const panel  = document.getElementById('pdfPanel');
+  const body   = document.getElementById('pdfPanelBody');
+  const name   = document.getElementById('pdfPanelName');
+  const link   = document.getElementById('pdfOpenNew');
+
+  // 組合正確的 API 路由（query string 方式，避免中文路徑問題）
+  const cat    = decodeURIComponent(url.split('/pdfs/')[1]?.split('/')[0] || '');
+  const apiUrl = `/api/pdf?category=${encodeURIComponent(cat)}&filename=${encodeURIComponent(filename)}`;
+  const rawUrl = apiUrl;
+
+  name.textContent = filename.replace('.pdf','');
+  link.href = apiUrl;
+
+  // 顯示 loading
+  body.innerHTML = `
+    <div class="pdf-placeholder">
+      <div style="width:36px;height:36px;border:3px solid rgba(61,155,255,0.2);
+                  border-top-color:#3d9bff;border-radius:50%;
+                  animation:spin .8s linear infinite;margin-bottom:16px;"></div>
+      <p>PDF 載入中...</p>
+    </div>`;
+  panel.classList.add('open');
+
+  // 標記選中卡片
+  document.querySelectorAll('.source-card').forEach(c => c.classList.remove('card-active'));
+  if (event && event.currentTarget) event.currentTarget.classList.add('card-active');
+
+  // 稍等後載入 embed
+  setTimeout(() => {
+    body.innerHTML = `
+      <iframe
+        src="${apiUrl}"
+        width="100%" height="100%"
+        style="border:none;flex:1;min-height:0;"
+        onload="this.style.background='#fff'"
+        onerror="pdfFallback('${rawUrl}','${filename.replace(/'/g,"\\'")}')">
+      </iframe>`;
+
+    // 3 秒後若仍空白，顯示備用按鈕
+    setTimeout(() => {
+      const iframe = body.querySelector('iframe');
+      if (!iframe) return;
+      try {
+        if (!iframe.contentDocument || iframe.contentDocument.body?.childElementCount === 0) {
+          pdfFallback(rawUrl, filename);
+        }
+      } catch(e) { /* cross-origin 正常現象，代表 PDF 有在顯示 */ }
+    }, 3000);
+  }, 150);
+}
+
+function pdfFallback(url, filename) {
+  const body = document.getElementById('pdfPanelBody');
+  body.innerHTML = `
+    <div class="pdf-placeholder">
+      <div style="font-size:48px;margin-bottom:16px">📄</div>
+      <p style="font-weight:700;color:var(--text);font-size:15px;margin-bottom:6px">
+        ${filename.replace('.pdf','')}
+      </p>
+      <p style="font-size:13px;margin-bottom:22px">瀏覽器無法內嵌顯示此 PDF</p>
+      <a href="${url}" target="_blank" style="
+        background:linear-gradient(135deg,#3d9bff,#7b61ff);
+        color:#fff;border-radius:10px;padding:11px 28px;
+        text-decoration:none;font-size:14px;font-weight:700;
+        display:inline-flex;align-items:center;gap:8px;">
+        📂 點此開啟完整 PDF
+      </a>
+    </div>`;
+}
+
+function closePdfPanel() {
+  const panel = document.getElementById('pdfPanel');
+  const body  = document.getElementById('pdfPanelBody');
+  panel.classList.remove('open');
+  setTimeout(() => {
+    body.innerHTML = `
+      <div class="pdf-placeholder">
+        <div class="pdf-placeholder-icon">📂</div>
+        <p>點擊左側來源文件<br>即可在此閱讀 PDF</p>
+      </div>`;
+  }, 300);
+  document.querySelectorAll('.source-card').forEach(c => c.classList.remove('card-active'));
+}
+
+function hl(text, q) {
+  const safe = text.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const kw = q.split(/\s+/).filter(k => k.length > 1);
+  if (!kw.length) return safe;
+  return safe.replace(
+    new RegExp(`(${kw.map(k=>k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')})`, 'gi'),
+    '<mark>$1</mark>');
+}
+</script>
+</body>
+</html>
