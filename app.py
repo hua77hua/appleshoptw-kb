@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse, FileResponse
 from pydantic import BaseModel
 
 import chromadb
-from sentence_transformers import SentenceTransformer
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 # 選用：OpenAI-compatible LLM (Apple GenAI / OpenAI / Ollama)
 try:
@@ -35,8 +35,7 @@ load_dotenv()
 # ─── 設定 ──────────────────────────────────────────────────────────
 CHROMA_PATH    = "./chroma_db"
 COLLECTION     = "knowledge_base"
-EMBED_MODEL    = "paraphrase-multilingual-mpnet-base-v2"
-TOP_K          = 6        # 每次搜尋回傳的最相關段落數
+TOP_K          = 6
 PDF_UPLOAD_DIR = "./pdfs"
 STATIC_DIR     = "./static"
 
@@ -48,13 +47,11 @@ LLM_MODEL      = os.getenv("LLM_MODEL",    "gpt-4o-mini")
 app = FastAPI(title="PDF 知識庫 API", version="1.0.0")
 
 # ── 全域初始化（啟動時執行一次）──────────────────────────────────────
-print("🧠 載入語意模型...")
-embed_model = SentenceTransformer(EMBED_MODEL)
-
 print("🗄  連線 ChromaDB...")
+ef = DefaultEmbeddingFunction()
 db = chromadb.PersistentClient(path=CHROMA_PATH)
 try:
-    collection = db.get_collection(COLLECTION)
+    collection = db.get_collection(COLLECTION, embedding_function=ef)
     print(f"✅ 資料庫已載入，共 {collection.count()} 筆段落")
 except Exception:
     collection = None
@@ -93,13 +90,13 @@ def semantic_search(question: str, category: Optional[str], top_k: int) -> list[
     if collection is None:
         raise HTTPException(status_code=503, detail="資料庫尚未建立，請先執行 ingest.py")
 
-    query_emb = embed_model.encode(question).tolist()
+    query_emb = ef([question])
     where = None
     if category and category not in ("all", "全部"):
         where = {"category": {"$eq": category}}
 
     results = collection.query(
-        query_embeddings=[query_emb],
+        query_embeddings=query_emb,
         n_results=top_k,
         where=where,
         include=["documents", "metadatas", "distances"],

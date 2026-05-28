@@ -24,14 +24,13 @@ from tqdm import tqdm
 
 import pdfplumber
 import chromadb
-from sentence_transformers import SentenceTransformer
+from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 
 # ─── 設定 ──────────────────────────────────────────────────────────
 CHROMA_PATH   = "./chroma_db"
 COLLECTION    = "knowledge_base"
-EMBED_MODEL   = "paraphrase-multilingual-mpnet-base-v2"   # 支援中文 + 英文
-CHUNK_SIZE    = 400   # 每段字元數（繁中約 200 字 = 400 chars）
-CHUNK_OVERLAP = 80    # 重疊字元，避免截斷語意
+CHUNK_SIZE    = 400
+CHUNK_OVERLAP = 80
 # ────────────────────────────────────────────────────────────────────
 
 
@@ -80,8 +79,9 @@ def ingest(pdf_dir: str, reset: bool = False):
         print(f"❌ 找不到資料夾: {pdf_dir}")
         sys.exit(1)
 
-    # ── 初始化 ChromaDB ──────────────────────────────────────────────
+    # ── 初始化 ChromaDB（使用內建輕量嵌入模型）────────────────────────────
     db = chromadb.PersistentClient(path=CHROMA_PATH)
+    ef = DefaultEmbeddingFunction()
     if reset:
         print("🗑  清除舊資料庫...")
         try:
@@ -90,12 +90,11 @@ def ingest(pdf_dir: str, reset: bool = False):
             pass
     collection = db.get_or_create_collection(
         name=COLLECTION,
+        embedding_function=ef,
         metadata={"hnsw:space": "cosine"}
     )
 
-    # ── 載入嵌入模型 ─────────────────────────────────────────────────
-    print(f"🧠 載入語意模型: {EMBED_MODEL}")
-    model = SentenceTransformer(EMBED_MODEL)
+    print("✅ 使用 ChromaDB 內建嵌入模型（輕量，無需 torch）")
 
     # ── 收集所有 PDF 路徑 + 分類 ────────────────────────────────────
     pdf_tasks: list[tuple[Path, str]] = []
@@ -123,17 +122,15 @@ def ingest(pdf_dir: str, reset: bool = False):
         if not pages:
             continue
 
-        ids, docs, metas, embeddings = [], [], [], []
+        ids, docs, metas = [], [], []
         chunk_idx = 0
 
         for page_data in pages:
             chunks = chunk_text(page_data["text"])
             for chunk in chunks:
-                if len(chunk.strip()) < 20:   # 過濾雜訊
+                if len(chunk.strip()) < 20:
                     continue
                 uid = f"{fid}_{chunk_idx}"
-                emb = model.encode(chunk).tolist()
-
                 ids.append(uid)
                 docs.append(chunk)
                 metas.append({
@@ -143,18 +140,15 @@ def ingest(pdf_dir: str, reset: bool = False):
                     "page":     page_data["page"],
                     "source":   str(pdf_path),
                 })
-                embeddings.append(emb)
                 chunk_idx += 1
 
         if ids:
-            # 批次寫入（ChromaDB 建議 <= 500 筆/次）
             batch_size = 200
             for i in range(0, len(ids), batch_size):
                 collection.upsert(
                     ids=ids[i:i+batch_size],
                     documents=docs[i:i+batch_size],
                     metadatas=metas[i:i+batch_size],
-                    embeddings=embeddings[i:i+batch_size],
                 )
             total_chunks += len(ids)
 
